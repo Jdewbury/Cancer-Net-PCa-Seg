@@ -40,13 +40,23 @@ def resize_image(img, img_size=(256, 256)):
     """
     return cv2.resize(img, img_size, interpolation=cv2.INTER_AREA)
 
-def visualize_sample(img_tensor, mask_tensor):
+def visualize_sample(img_tensor, label_tensor, img_size=(7, 3), pred_tensor=None):
     img = img_tensor.numpy().squeeze()
-    mask = mask_tensor.numpy().squeeze()
+    label = label_tensor.numpy().squeeze()
+    
+    if pred_tensor is not None:
+        pred = pred_tensor.numpy().squeeze()
+        fig, axes = plt.subplots(1, 3, figsize=img_size)
+        titles = ['Image', 'True Mask', 'Predicted Mask']
+        images = [img, label, pred]
+    else:
+        fig, axes = plt.subplots(1, 2, figsize=img_size) 
+        titles = ['Image', 'True Mask']
+        images = [img, label]
+    for ax, image, title in zip(axes, images, titles):
+        ax.imshow(image, cmap='gray')
+        ax.set_title(title)
+        ax.axis('off') 
 
-    fig, ax = plt.subplots(1, 2)
-    ax[0].imshow(img, cmap='gray')
-    ax[0].set_title('Image')
-    ax[1].imshow(mask, cmap='gray')
-    ax[1].set_title('Mask')
+    plt.tight_layout()
     plt.show()
