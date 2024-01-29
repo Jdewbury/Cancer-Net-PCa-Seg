@@ -24,9 +24,7 @@ def normalize_image(img):
     Yields:
         Normalized image array.
     """
-    if img.max() == 0:
-        return img
-    return img / img.max()
+    return img / img.max() if img.max() != 0 else img
 
 def resize_image(img, img_size=(256, 256)):
     """Resize images to desired size.
