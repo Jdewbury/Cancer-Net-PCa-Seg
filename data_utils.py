@@ -1,5 +1,4 @@
 import glob
-import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import nibabel as nib
@@ -29,35 +28,17 @@ def list_prostate_paths(directory):
     prostate_paths = glob.glob(f'{directory}/**/prostate_mask.npy', recursive=True)
     return np.array([sorted(lesion_paths), sorted(prostate_paths)])
 
-def nib_to_numpy(path):
+def nib_to_numpy(directory):
+    """Load an image using nibabel, and convert it to a numpy array.
+
+    Args:
+        directory: Directory path to convert nib file to numpy array.
+
+    Yields:
+        Numpy array of type uint8.
     """
-    Load an image using nibabel, and convert it to a numpy array of type uint8.
-    """
-    image = nib.load(path).dataobj
+    image = nib.load(directory).dataobj
     return np.array(image).astype(np.uint8)
-
-def normalize_image(img):
-    """Normalize images to [0, 1].
-
-    Args:
-        img: Image array.
-
-    Yields:
-        Normalized image array.
-    """
-    return img / img.max() if img.max() != 0 else img
-
-def resize_image(img, img_size=(256, 256)):
-    """Resize images to desired size.
-
-    Args:
-        img: Image array.
-        img_size: Desire image array resize.
-
-    Yields:
-        Resized image array.
-    """
-    return cv2.resize(img, img_size, interpolation=cv2.INTER_AREA)
 
 def visualize_sample(img_tensor, label_tensor, img_size=(7, 3), pred_tensor=None):
     img = img_tensor.numpy().squeeze()
