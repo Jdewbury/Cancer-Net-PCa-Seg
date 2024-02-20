@@ -61,7 +61,7 @@ dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, batch_size=args
                        slice_num=args.slice, prostate=args.prostate_mask, transform=transform)
 
 loss_function = DiceLoss(sigmoid=True)
-dice_metric = DiceMetric(include_background=True, reduction="mean")
+dice_metric = DiceMetric(include_background=True, reduction='mean')
 
 print('Starting Training')
 
@@ -83,7 +83,7 @@ for epoch in range(args.epochs):
         loss.backward()
         optimizer.step()
         epoch_loss += loss.item()
-    print(f"epoch {epoch + 1} average loss: {epoch_loss:.4f}")
+    print(f'epoch {epoch + 1} average loss: {epoch_loss:.4f}')
 
     if (epoch + 1) % val_interval == 0:
         model.eval()
@@ -108,7 +108,7 @@ for epoch in range(args.epochs):
                 torch.save(model.state_dict(), f'best_{args.model}.pth')
                 no_improvement = 0
 
-    print(f"Training completed, best_metric: {best_metric} at epoch: {best_metric_epoch}")
+    print(f'Training completed, best_metric: {best_metric} at epoch: {best_metric_epoch}')
 
 
 
