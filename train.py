@@ -64,13 +64,10 @@ dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, batch_size=args
 loss_function = DiceLoss(sigmoid=True)
 dice_metric = DiceMetric(include_background=True, reduction='mean')
 
-print(args.prostate_mask, args.save)
-
 if args.prostate_mask:
     weight_path = f'models/CancerNetPCa-prostate-{args.model}.pth'
 else:
     weight_path = f'models/CancerNetPCa-{args.model}.pth'
-print('using', weight_path)
 
 print('Starting Training')
 
