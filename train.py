@@ -105,7 +105,7 @@ for epoch in range(args.epochs):
             if args.save and mean_val_dice > best_metric:
                 best_metric = mean_val_dice
                 best_metric_epoch = epoch + 1
-                torch.save(model.state_dict(), f'best_{args.model}.pth')
+                torch.save(model.state_dict(), f'CancerNetPCa-{args.model}.pth')
                 no_improvement = 0
 
     print(f'Training completed, best_metric: {best_metric} at epoch: {best_metric_epoch}')
