@@ -36,7 +36,7 @@ if args.model == 'segresnet':
 
 if args.model == 'unet':
     print('Using UNet')
-    unet = monai.networks.nets.UNet(
+    model = monai.networks.nets.UNet(
         spatial_dims=2,
         in_channels=1,
         out_channels=1,
