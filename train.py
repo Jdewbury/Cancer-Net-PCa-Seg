@@ -14,7 +14,7 @@ parser.add_argument('--epochs', default=200, type=int, help='Total number of tra
 parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate for training.')
 parser.add_argument('--model', default='unet', type=str, help='Model architecture to be used for training.')
 parser.add_argument('--img_dir', default='data/images', type=str, help='Directory containing image data.')
-parser.add_argument('--mask_dir', default='data/masks', type=str, help='Directory containing mask data.')
+parser.add_argument('--mask_dir', default='data_2', type=str, help='Directory containing mask data.')
 parser.add_argument('--prostate_mask', default=False, help='Flag to use prostate mask.')
 parser.add_argument('--size', default=256, help='Desired size of image and mask.')
 parser.add_argument('--slice', default=9, help='Slice to be evaluated.')

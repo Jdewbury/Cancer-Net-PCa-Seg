@@ -4,7 +4,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from data_utils import nib_to_numpy
 
 class CancerNetPCa:
-    def __init__(self, img_path, mask_path, batch_size=10, val_split=0.15, test_split=0.15, num_workers=4, img_size=(256, 256), slice_num=9, prostate=False, transform=None):
+    def __init__(self, img_path, mask_path, batch_size=10, val_split=0.15, test_split=0.15, num_workers=2, img_size=(256, 256), slice_num=9, prostate=False, transform=None):
         self.dataset = CancerNetPCaDataset(img_path, mask_path, img_size, slice_num, prostate, transform)
 
         dataset_size = len(self.dataset)
@@ -33,7 +33,6 @@ class CancerNetPCaDataset(Dataset):
             self.transform = transform
 
         def __len__(self):
-            print(len(self.img_path))
             return len(self.img_path)
 
         def __getitem__(self, idx):   
