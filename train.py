@@ -15,10 +15,10 @@ parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial 
 parser.add_argument('--model', default='unet', type=str, help='Model architecture to be used for training.')
 parser.add_argument('--img_dir', default='data/images', type=str, help='Directory containing image data.')
 parser.add_argument('--mask_dir', default='data_2', type=str, help='Directory containing mask data.')
-parser.add_argument('--prostate_mask', default=False, help='Flag to use prostate mask.')
+parser.add_argument('--prostate_mask', action='store_true', help='Flag to use prostate mask.')
 parser.add_argument('--size', default=256, help='Desired size of image and mask.')
 parser.add_argument('--slice', default=9, help='Slice to be evaluated.')
-parser.add_argument('--save', default=True, help='Save best model weights.')
+parser.add_argument('--save', action='store_true', help='Save best model weights.')
 parser.add_argument('--val_interval', default=2, type=int, help='Save best model weights.')
 
 args = parser.parse_args()
@@ -64,10 +64,13 @@ dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, batch_size=args
 loss_function = DiceLoss(sigmoid=True)
 dice_metric = DiceMetric(include_background=True, reduction='mean')
 
+print(args.prostate_mask, args.save)
+
 if args.prostate_mask:
     weight_path = f'models/CancerNetPCa-prostate-{args.model}.pth'
 else:
     weight_path = f'models/CancerNetPCa-{args.model}.pth'
+print('using', weight_path)
 
 print('Starting Training')
 
