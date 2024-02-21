@@ -39,6 +39,19 @@ def nib_to_numpy(directory):
     """
     image = nib.load(directory).dataobj
     return np.array(image).astype(np.uint8)
+    
+def nib_to_numpy(directory):
+    """Load an image using nibabel, and convert it to a numpy array.
+
+    Args:
+        directory: Directory path to convert nib file to numpy array.
+
+    Yields:
+        Numpy array of image.
+    """
+    img = nib.load(directory).get_fdata()
+    img = img.astype(np.float32)
+    return img
 
 def visualize_sample(img_tensor, label_tensor, img_size=(7, 3), pred_tensor=None):
     img = img_tensor.numpy().squeeze()

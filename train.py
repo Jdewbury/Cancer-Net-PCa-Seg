@@ -19,6 +19,7 @@ parser.add_argument('--prostate_mask', default=False, help='Flag to use prostate
 parser.add_argument('--size', default=256, help='Desired size of image and mask.')
 parser.add_argument('--slice', default=9, help='Slice to be evaluated.')
 parser.add_argument('--save', default=True, help='Save best model weights.')
+parser.add_argument('--val_interval', default=2, type=int, help='Save best model weights.')
 
 args = parser.parse_args()
 
@@ -52,7 +53,7 @@ mask_paths = list_prostate_paths(args.mask_dir)
 
 transform = transforms.Compose([
     transforms.ToPILImage(),
-    transforms.Resize((216, 216)),
+    transforms.Resize((args.size, args.size)),
     transforms.ToTensor(),
     transforms.Lambda(lambda img: img / img.max() if img.max() > 0 else img)
 ])
@@ -63,13 +64,18 @@ dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, batch_size=args
 loss_function = DiceLoss(sigmoid=True)
 dice_metric = DiceMetric(include_background=True, reduction='mean')
 
+if args.prostate_mask:
+    weight_path = f'models/CancerNetPCa-prostate-{args.model}.pth'
+else:
+    weight_path = f'models/CancerNetPCa-{args.model}.pth'
+
 print('Starting Training')
 
 device = torch.device('cuda'if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 
-val_interval = 5
 best_metric = 0
+best_metric_epoch = 0
 
 for epoch in range(args.epochs):
     model.train()
@@ -85,7 +91,7 @@ for epoch in range(args.epochs):
         epoch_loss += loss.item()
     print(f'epoch {epoch + 1} average loss: {epoch_loss:.4f}')
 
-    if (epoch + 1) % val_interval == 0:
+    if (epoch + 1) % int(args.val_interval) == 0:
         model.eval()
         with torch.no_grad():
             val_dice = []
@@ -101,14 +107,13 @@ for epoch in range(args.epochs):
             val_dice.append(metric)
             dice_metric.reset()
             mean_val_dice = np.mean([score for score in val_dice if not np.isnan(score)])
-
             if args.save and mean_val_dice > best_metric:
                 best_metric = mean_val_dice
                 best_metric_epoch = epoch + 1
-                torch.save(model.state_dict(), f'CancerNetPCa-{args.model}.pth')
+                torch.save(model.state_dict(), weight_path)
                 no_improvement = 0
+                print(f"Best metric: {best_metric} at epoch: {best_metric_epoch}")
 
-    print(f'Training completed, best_metric: {best_metric} at epoch: {best_metric_epoch}')
-
+print(f'Training completed, best metric: {best_metric} at epoch: {best_metric_epoch} saved at {weight_path}')
 
 
