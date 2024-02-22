@@ -165,14 +165,14 @@ if args.test:
 
 if args.save:
     print('Saving Values')
-    model_dir = os.path.join('scores', f'{args.prostate_mask*"prostate-"}{args.model}')
+    dir = os.path.join('scores', f'{args.prostate_mask*"prostate-"}{args.model}')
 
     count = 1
-    while os.path.exists(model_dir):
-        model_dir = f'{model_dir}_{count}'
+    while os.path.exists(dir):
+        dir = f'{dir}_{count}'
         count += 1
 
-    os.mkdir(model_dir)
+    os.mkdir(dir)
     np.save(f'{dir}/train_dice.npy', train_dice)
     np.save(f'{dir}/train_loss.npy', train_loss)
     np.save(f'{dir}/val_dice.npy', val_dice)
