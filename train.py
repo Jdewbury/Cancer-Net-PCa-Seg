@@ -69,7 +69,16 @@ dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, batch_size=args
 loss_function = DiceLoss(sigmoid=True)
 dice_metric = DiceMetric(include_background=True, reduction='mean')
 
-weight_path = f'models/CancerNetPCa{args.prostate_mask*"-prostate"}-{args.model}.pth'
+dir = os.path.join('scores', f'{args.prostate_mask*"prostate-"}{args.model}')
+
+count = 1
+while os.path.exists(dir):
+    dir = f'{dir}_{count}'
+    count += 1
+
+os.mkdir(dir)
+
+weight_path = f'models/{dir}/CancerNetPCa.pth'
 
 print('Starting Training')
 
@@ -156,18 +165,11 @@ if args.test:
     
     end_time = perf_counter()
     elapsed_time = end_time - start_time
-    print(f'test loss: {test_loss:.4f}, test dice: {test_dice:.4f}, time: {elapsed_time}')
+    print(f'test loss: {test_loss:.4f}, test dice: {test_dice:.4f}, total time: {elapsed_time}')
 
 if args.save:
     print('Saving Values')
-    dir = os.path.join('scores', f'{args.prostate_mask*"prostate-"}{args.model}')
 
-    count = 1
-    while os.path.exists(dir):
-        dir = f'{dir}_{count}'
-        count += 1
-
-    os.mkdir(dir)
     np.save(f'{dir}/train_dice.npy', train_dice)
     np.save(f'{dir}/train_loss.npy', train_loss)
     np.save(f'{dir}/val_dice.npy', val_dice)
