@@ -97,7 +97,6 @@ for epoch in range(args.epochs):
         optimizer.step()
         epoch_loss += loss.item()
 
-        outputs = torch.sigmoid(outputs)
         dice_metric(y_pred=outputs, y=labels)
 
     train_metric = dice_metric.aggregate().item()
@@ -120,8 +119,6 @@ for epoch in range(args.epochs):
 
                 loss = loss_function(outputs, labels)
                 epoch_loss += loss.item()
-
-                val_outputs = torch.sigmoid(val_outputs)
                 dice_metric(y_pred=val_outputs, y=val_labels)
 
             val_metric = dice_metric.aggregate().item()
@@ -135,7 +132,7 @@ for epoch in range(args.epochs):
                 best_metric_epoch = epoch + 1
                 torch.save(model.state_dict(), weight_path)
                 no_improvement = 0
-                print(f"Best metric: {best_metric} at epoch: {best_metric_epoch}")
+                print(f"Saving new best model, best metric: {best_metric} at epoch: {best_metric_epoch}")
 
 print(f'Training completed, best metric: {best_metric} at epoch: {best_metric_epoch} saved at: {weight_path}')
 
@@ -153,8 +150,6 @@ if args.test:
 
             loss = loss_function(outputs, labels)
             test_loss += loss.item()
-
-            test_outputs = torch.sigmoid(test_outputs)
             dice_metric(y_pred=test_outputs, y=test_labels)
 
         test_dice = dice_metric.aggregate().item()
