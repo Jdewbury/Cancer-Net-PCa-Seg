@@ -69,16 +69,20 @@ dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, batch_size=args
 loss_function = DiceLoss(sigmoid=True)
 dice_metric = DiceMetric(include_background=True, reduction='mean')
 
-dir = os.path.join('scores', f'{args.prostate_mask*"prostate-"}{args.model}')
+dir = f'{args.prostate_mask*"prostate-"}{args.model}'
 
-count = 1
-while os.path.exists(dir):
-    dir = f'{dir}_{count}'
-    count += 1
-
-os.mkdir(dir)
-
-weight_path = f'models/{dir}/CancerNetPCa.pth'
+if args.save:
+    count = 1
+    unique_dir = f"scores/{dir}_{count}"
+    
+    while os.path.exists(unique_dir):
+        count += 1
+        unique_dir = f"scores/{dir}_{count}"
+    
+    weight_dir = f'models/{dir}_{count}'
+    weight_path = f'{weight_dir}/CancerNetPCa.pth'
+    os.mkdir(unique_dir)
+    os.mkdir(weight_dir)
 
 print('Starting Training')
 
@@ -105,7 +109,8 @@ for epoch in range(args.epochs):
         loss.backward()
         optimizer.step()
         epoch_loss += loss.item()
-
+        
+        outputs = torch.sigmoid(outputs)
         dice_metric(y_pred=outputs, y=labels)
 
     train_metric = dice_metric.aggregate().item()
@@ -128,6 +133,7 @@ for epoch in range(args.epochs):
 
                 loss = loss_function(val_outputs, val_labels)
                 epoch_loss += loss.item()
+                val_outputs = torch.sigmoid(val_outputs)
                 dice_metric(y_pred=val_outputs, y=val_labels)
 
             val_metric = dice_metric.aggregate().item()
@@ -147,6 +153,7 @@ print(f'Training completed, best metric: {best_metric} at epoch: {best_metric_ep
 
 if args.test:
     print('Starting Testing')
+    model.load_state_dict(torch.load(weight_path))
     start_time = perf_counter()
 
     model.eval()
@@ -159,6 +166,7 @@ if args.test:
 
             loss = loss_function(test_outputs, test_labels)
             test_loss += loss.item()
+            test_outputs = torch.sigmoid(test_outputs)
             dice_metric(y_pred=test_outputs, y=test_labels)
 
         test_dice = dice_metric.aggregate().item()
@@ -168,14 +176,14 @@ if args.test:
     print(f'test loss: {test_loss:.4f}, test dice: {test_dice:.4f}, total time: {elapsed_time}')
 
 if args.save:
-    print('Saving Values')
+    print(f'Saving values at {unique_dir}')
 
-    np.save(f'{dir}/train_dice.npy', train_dice)
-    np.save(f'{dir}/train_loss.npy', train_loss)
-    np.save(f'{dir}/val_dice.npy', val_dice)
-    np.save(f'{dir}/val_loss.npy', val_loss)
-    np.save(f'{dir}/test_dice.npy', test_dice)
-    np.save(f'{dir}/test_loss.npy', test_loss)
+    np.save(f'{unique_dir}/train_dice.npy', train_dice)
+    np.save(f'{unique_dir}/train_loss.npy', train_loss)
+    np.save(f'{unique_dir}/val_dice.npy', val_dice)
+    np.save(f'{unique_dir}/val_loss.npy', val_loss)
+    np.save(f'{unique_dir}/test_dice.npy', test_dice)
+    np.save(f'{unique_dir}/test_loss.npy', test_loss)
 
 
 
