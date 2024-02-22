@@ -86,7 +86,6 @@ val_dice = []
 for epoch in range(args.epochs):
     model.train()
     epoch_loss = 0
-    dice_scores = []
     for batch_data in dataset.train:
         inputs, labels = batch_data
         inputs, labels = inputs.to(device), labels.to(device)
@@ -102,20 +101,18 @@ for epoch in range(args.epochs):
         dice_metric(y_pred=outputs, y=labels)
 
     train_metric = dice_metric.aggregate().item()
-    dice_scores.append(metric)
     dice_metric.reset()
 
     train_loss.append(epoch_loss)
-    train_dice.append(metric)
+    train_dice.append(train_metric)
 
     scheduler.step()
-    print(f'epoch {epoch + 1}, learning rate: {scheduler.get_last_lr()}, train loss: {epoch_loss:.4f}, train dice: {metric:.4f}')
+    print(f'epoch {epoch + 1}, learning rate: {scheduler.get_last_lr()}, train loss: {epoch_loss:.4f}, train dice: {train_metric:.4f}')
 
     if (epoch + 1) % int(args.val_interval) == 0:
         model.eval()
         with torch.no_grad():
             epoch_loss = 0
-            dice_scores = []
             for val_data in dataset.val:
                 val_inputs, val_labels = val_data
                 val_inputs, val_labels = val_inputs.to(device), val_labels.to(device)
@@ -127,14 +124,14 @@ for epoch in range(args.epochs):
                 val_outputs = torch.sigmoid(val_outputs)
                 dice_metric(y_pred=val_outputs, y=val_labels)
 
-            metric = dice_metric.aggregate().item()
+            val_metric = dice_metric.aggregate().item()
             dice_metric.reset()
 
             val_loss.append(epoch_loss)
-            val_dice.append(metric)
+            val_dice.append(val_metric)
 
-            if args.save and metric > best_metric:
-                best_metric = metric
+            if args.save and val_metric > best_metric:
+                best_metric = val_metric
                 best_metric_epoch = epoch + 1
                 torch.save(model.state_dict(), weight_path)
                 no_improvement = 0
