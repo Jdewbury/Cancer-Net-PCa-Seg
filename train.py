@@ -107,7 +107,7 @@ for epoch in range(args.epochs):
     train_dice.append(train_metric)
 
     scheduler.step()
-    print(f'epoch {epoch + 1}, learning rate: {scheduler.get_last_lr()}, train loss: {epoch_loss:.4f}, train dice: {train_metric:.4f}')
+    print(f'epoch {epoch + 1}, learning rate: {scheduler.get_last_lr()[0]:.1e}, train loss: {epoch_loss:.4f}, train dice: {train_metric:.4f}')
 
     if (epoch + 1) % int(args.val_interval) == 0:
         model.eval()
@@ -168,11 +168,11 @@ if args.save:
     model_dir = os.path.join('scores', f'{args.prostate_mask*"prostate-"}{args.model}')
 
     count = 1
-    while os.path.exists(dir):
-        dir+=f'_{count}'
+    while os.path.exists(model_dir):
+        model_dir = f'{model_dir}_{count}'
         count += 1
-    os.mkdir(dir)
 
+    os.mkdir(model_dir)
     np.save(f'{dir}/train_dice.npy', train_dice)
     np.save(f'{dir}/train_loss.npy', train_loss)
     np.save(f'{dir}/val_dice.npy', val_dice)
