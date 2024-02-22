@@ -126,7 +126,7 @@ for epoch in range(args.epochs):
                 val_inputs, val_labels = val_inputs.to(device), val_labels.to(device)
                 val_outputs = model(val_inputs)
 
-                loss = loss_function(outputs, labels)
+                loss = loss_function(val_outputs, val_labels)
                 epoch_loss += loss.item()
                 dice_metric(y_pred=val_outputs, y=val_labels)
 
@@ -157,7 +157,7 @@ if args.test:
             test_inputs, test_labels = test_inputs.to(device), test_labels.to(device)
             test_outputs = model(test_inputs)
 
-            loss = loss_function(outputs, labels)
+            loss = loss_function(test_outputs, test_labels)
             test_loss += loss.item()
             dice_metric(y_pred=test_outputs, y=test_labels)
 
