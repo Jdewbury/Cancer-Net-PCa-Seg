@@ -1,3 +1,4 @@
+import os
 import glob
 import numpy as np
 import matplotlib.pyplot as plt
@@ -54,6 +55,17 @@ def nib_to_numpy(directory):
     return img
 
 def visualize_sample(img_tensor, label_tensor, img_size=(7, 3), pred_tensor=None):
+    """Visualizes set of samples to compare image, label, and predicted image (optional).
+
+    Args:
+        img_tensor: Tensor of image. 
+        img_tensor: Tensor of label image. 
+        img_size: Desired size of figure plot. 
+        pred_tensor: Tensor of predicted image. 
+    
+    Yields:
+        Single row plot of images.
+    """
     img = img_tensor.numpy().squeeze()
     label = label_tensor.numpy().squeeze()
     
@@ -73,3 +85,52 @@ def visualize_sample(img_tensor, label_tensor, img_size=(7, 3), pred_tensor=None
 
     plt.tight_layout()
     plt.show()
+
+def plot_single_metric(loss, dice, label='Training'):
+    """Plot the loss and dice scores across each epoch side by side.
+
+    Args:
+        loss: Array of training loss values.
+        dice: Array of training dice scores.
+        label: Label for the plot.
+
+    Yields:
+        Single row plot of loss and dice metrics.
+    """
+    fig, axs = plt.subplots(1, 2, figsize=(10, 4))
+    epochs = len(loss)
+
+    axs[0].plot(range(1, epochs + 1), loss)
+    axs[0].set_title(f'{label} Loss')
+    axs[0].set_xlabel('Epochs')
+    axs[0].set_ylabel('Loss')
+
+    axs[1].plot(range(1, epochs + 1), dice)
+    axs[1].set_title(f'{label} Dice Score')
+    axs[1].set_xlabel('Epochs')
+    axs[1].set_ylabel('Dice Score')
+
+    plt.tight_layout()
+    plt.show()
+
+def plot_metrics(directory):
+    """Plot the loss and dice scores across train and validation set.
+
+    Args:
+        directory: Directory path to folder containing metric arrays.
+
+    Yields:
+        Two single row plot of training and validation loss and dice metrics.
+    """
+    train_loss_path = os.path.join(directory, 'train-loss.npy')
+    train_dice_path = os.path.join(directory, 'train-dice.npy')
+    val_loss_path = os.path.join(directory, 'val-loss.npy')
+    val_dice_path = os.path.join(directory, 'val-dice.npy')
+    
+    train_loss = np.load(train_loss_path)
+    train_dice = np.load(train_dice_path)
+    val_loss = np.load(val_loss_path)
+    val_dice = np.load(val_dice_path)
+
+    plot_single_metric(train_loss, train_dice, label='Training')
+    plot_single_metric(val_loss, val_dice, label='Validation')
