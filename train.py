@@ -69,17 +69,17 @@ dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, batch_size=args
 loss_function = DiceLoss(sigmoid=True)
 dice_metric = DiceMetric(include_background=True, reduction='mean')
 
-dir = f'{args.prostate_mask*"prostate-"}{args.model}'
+dir = f'{args.prostate_mask*"pro-"}{args.model}'
 
 if args.save:
     count = 1
-    unique_dir = f"scores/{dir}_{count}"
+    unique_dir = f"scores/{dir}-{count}"
     
     while os.path.exists(unique_dir):
         count += 1
-        unique_dir = f"scores/{dir}_{count}"
+        unique_dir = f"scores/{dir}-{count}"
     
-    weight_dir = f'models/{dir}_{count}'
+    weight_dir = f'models/{dir}-{count}'
     weight_path = f'{weight_dir}/CancerNetPCa.pth'
     os.mkdir(unique_dir)
     os.mkdir(weight_dir)
@@ -178,12 +178,12 @@ if args.test:
 if args.save:
     print(f'Saving values at {unique_dir}')
 
-    np.save(f'{unique_dir}/train_dice.npy', train_dice)
-    np.save(f'{unique_dir}/train_loss.npy', train_loss)
-    np.save(f'{unique_dir}/val_dice.npy', val_dice)
-    np.save(f'{unique_dir}/val_loss.npy', val_loss)
-    np.save(f'{unique_dir}/test_dice.npy', test_dice)
-    np.save(f'{unique_dir}/test_loss.npy', test_loss)
+    np.save(f'{unique_dir}/train-dice.npy', train_dice)
+    np.save(f'{unique_dir}/train-loss.npy', train_loss)
+    np.save(f'{unique_dir}/val-dice.npy', val_dice)
+    np.save(f'{unique_dir}/val-loss.npy', val_loss)
+    np.save(f'{unique_dir}/test-dice.npy', test_dice)
+    np.save(f'{unique_dir}/test-loss.npy', test_loss)
 
 
 
