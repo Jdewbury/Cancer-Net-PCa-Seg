@@ -14,6 +14,7 @@ from time import perf_counter
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', default=16, type=int, help='Batch size for the training and validation loops.')
 parser.add_argument('--epochs', default=200, type=int, help='Total number of training epochs.')
+parser.add_argument('--seed', default=42, type=int, help='Seed to use for splitting dataset.')
 parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate for training.')
 parser.add_argument('--model', default='unet', type=str, help='Model architecture to be used for training.')
 parser.add_argument('--img_dir', default='data/images', type=str, help='Directory containing image data.')
@@ -63,7 +64,7 @@ transform = transforms.Compose([
     transforms.Lambda(lambda img: img / img.max() if img.max() > 0 else img)
 ])
 
-dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, batch_size=args.batch_size, img_size=(args.size, args.size), 
+dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=args.seed, batch_size=args.batch_size, img_size=(args.size, args.size), 
                        slice_num=args.slice, prostate=args.prostate_mask, transform=transform)
 
 loss_function = DiceLoss(sigmoid=True)
