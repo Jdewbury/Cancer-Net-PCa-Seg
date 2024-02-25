@@ -5,8 +5,12 @@ from data_utils import nib_to_numpy
 
 class CancerNetPCa:
     def __init__(self, img_path, mask_path, batch_size=10, val_split=0.15, test_split=0.15, num_workers=2, img_size=(256, 256), slice_num=9, prostate=False, transform=None):
-        self.dataset = CancerNetPCaDataset(img_path, mask_path, img_size, slice_num, prostate, transform)
+        # Step 1: Split patients into train/val/test (can also split the images from the path into this but make sure mask also split the same way).
 
+        # Step 2: Set up CancerNetPCaDataset(img_path, mask_path, train_patient_ids, img_size, prostate, transform) - remove slice.
+        # Train = all slices of the train patient's images, Val = all slices of the val patient's images, ...
+
+        self.dataset = CancerNetPCaDataset(img_path, mask_path, img_size, slice_num, prostate, transform)
         dataset_size = len(self.dataset)
         val_size = int(val_split * dataset_size)
         test_size = int(test_split * dataset_size)
