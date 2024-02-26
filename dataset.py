@@ -19,7 +19,7 @@ class CancerNetPCa:
         print(f'Using {train_size}/{val_size}/{test_size} train/val/test split')
 
         generator = torch.Generator()
-        generator.manual_seed(42)
+        generator.manual_seed(seed)
 
         self.train_dataset, self.val_dataset, self.test_dataset = random_split(self.dataset, [train_size, val_size, test_size], generator=generator)
 
