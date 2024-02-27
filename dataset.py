@@ -4,7 +4,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from data_utils import nib_to_numpy
 
 class CancerNetPCa:
-    def __init__(self, img_path, mask_path, batch_size=10, val_split=0.15, test_split=0.15, num_workers=2, img_size=(256, 256), slice_num=9, prostate=False, transform=None):
+    def __init__(self, img_path, mask_path, seed=42, batch_size=10, val_split=0.15, test_split=0.15, num_workers=2, img_size=(256, 256), slice_num=9, prostate=False, transform=None):
         # Step 1: Split patients into train/val/test (can also split the images from the path into this but make sure mask also split the same way).
 
         # Step 2: Set up CancerNetPCaDataset(img_path, mask_path, train_patient_ids, img_size, prostate, transform) - remove slice.
