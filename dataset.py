@@ -49,11 +49,13 @@ class CancerNetPCaDataset(Dataset):
                 # align mask with image
                 mask_t = np.transpose(lesion_np, (2, 1, 0))
                 mask = np.flip(mask_t, axis=1)
+                
+                num_slices = min(img_np.shape[2], mask.shape[2])
 
-                for slice in range(img_np.shape[2]):
+                for slice in range(num_slices):
                     data.append((img_np[slice], mask[slice]))
 
-            return np.array(data)
+            return data
 
         def __len__(self):
             return len(self.data)
