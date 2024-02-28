@@ -64,8 +64,8 @@ transform = transforms.Compose([
     transforms.Lambda(lambda img: img / img.max() if img.max() > 0 else img)
 ])
 
-dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=args.seed, batch_size=args.batch_size, img_size=(args.size, args.size), 
-                       slice_num=args.slice, prostate=args.prostate_mask, transform=transform)
+dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=args.seed, batch_size=args.batch_size,
+                        prostate=args.prostate_mask, transform=transform)
 
 loss_function = DiceLoss(sigmoid=True)
 dice_metric = DiceMetric(include_background=True, reduction='mean')
