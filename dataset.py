@@ -19,7 +19,7 @@ class CancerNetPCa:
         test_idx = idxs[train_size:train_size + test_size]
         val_idx = idxs[dataset_size - val_size:]
 
-        print(f'Using {train_size}/{val_size}/{test_size} train/val/test split')
+        #print(f'Using {train_size}/{val_size}/{test_size} train/val/test split')
 
         train_dataset = CancerNetPCaDataset(img_path[train_idx], mask_path[:, train_idx], prostate, transform)
         val_dataset = CancerNetPCaDataset(img_path[val_idx], mask_path[:, val_idx], prostate, transform)
@@ -44,7 +44,7 @@ class CancerNetPCaDataset(Dataset):
                 prostate_np = np.load(lesion)
                 lesion_np = np.load(prostate)
 
-                if prostate:
+                if self.prostate:
                     lesion_np *= prostate_np
                 # align mask with image
                 mask_t = np.transpose(lesion_np, (2, 1, 0))
