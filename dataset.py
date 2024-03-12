@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
 from data_utils import nib_to_numpy
+import matplotlib.pyplot as plt
 
 class CancerNetPCa:
     def __init__(self, img_path, mask_path, seed=42, batch_size=10, train_split=0.7, test_split=0.15, num_workers=2, prostate=False, transform=None):
@@ -18,8 +19,8 @@ class CancerNetPCa:
         train_idx = idxs[:train_size]
         test_idx = idxs[train_size:train_size + test_size]
         val_idx = idxs[dataset_size - val_size:]
-
-        #print(f'Using {train_size}/{val_size}/{test_size} train/val/test split')
+ 
+        print(f'Using {train_size}/{val_size}/{test_size} train/val/test split')
 
         train_dataset = CancerNetPCaDataset(img_path[train_idx], mask_path[:, train_idx], prostate, transform)
         val_dataset = CancerNetPCaDataset(img_path[val_idx], mask_path[:, val_idx], prostate, transform)
@@ -49,11 +50,12 @@ class CancerNetPCaDataset(Dataset):
                 # align mask with image
                 mask_t = np.transpose(lesion_np, (2, 1, 0))
                 mask = np.flip(mask_t, axis=1)
+                mask = (mask > 0).astype(np.float32)
                 
                 num_slices = min(img_np.shape[2], mask.shape[2])
 
                 for slice in range(num_slices):
-                    data.append((img_np[slice], mask[slice]))
+                    data.append((img_np[:, :, slice], mask[:, :, slice]))
 
             return data
 

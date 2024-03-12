@@ -40,11 +40,13 @@ def nib_to_numpy(directory):
     """
     img = nib.load(directory).get_fdata()
     img = np.nan_to_num(img)
-    img = np.array(img).astype(np.uint8)
+    img_np = np.array(img).astype(np.uint8)
+    img_f = img_np.astype(float)
+    img_f32 = img_f.astype(np.float32)
     
-    img_linear_window = [img.min(), img.max()]
+    img_linear_window = [img_f32.min(), img_f32.max()]
 
-    img_clip = np.clip(img, *img_linear_window)
+    img_clip = np.clip(img_f32, *img_linear_window)
     
     norm_img = (img_clip - img_linear_window[0]) / (
         img_linear_window[1] - img_linear_window[0]
