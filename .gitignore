@@ -1,4 +1,8 @@
+__pycache__
 data/
 data_2/
 test.ipynb
 setup.ipynb
+models/
+scores/
+
