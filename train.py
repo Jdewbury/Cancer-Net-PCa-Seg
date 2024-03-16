@@ -1,11 +1,12 @@
 import argparse
 import torch
+import torch.nn as nn
 from torchvision import transforms
 import numpy as np
 import monai
 from monai.losses import DiceLoss
 from monai.metrics import DiceMetric
-from data_utils import list_nii_paths, list_prostate_paths
+from data_utils import list_nii_paths, list_prostate_paths, visualize_sample
 from dataset import CancerNetPCa
 
 import os
@@ -21,8 +22,9 @@ parser.add_argument('--img_dir', default='data/images', type=str, help='Director
 parser.add_argument('--mask_dir', default='data_2', type=str, help='Directory containing mask data.')
 parser.add_argument('--prostate_mask', action='store_true', help='Flag to use prostate mask.')
 parser.add_argument('--size', default=256, help='Desired size of image and mask.')
-parser.add_argument('--slice', default=9, help='Slice to be evaluated.')
 parser.add_argument('--val_interval', default=2, type=int, help='Epoch interval for evaluation on validation set.')
+parser.add_argument('--lr_step', default=0.1, type=float, help='Epoch interval for evaluation on validation set.')
+
 parser.add_argument('--save', action='store_true', help='Save best model weights.')
 parser.add_argument('--test', action='store_true', help='Evaluate model on test set.')
 
@@ -52,7 +54,7 @@ if args.model == 'unet':
     )
 
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.5, 0.999))
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=(args.epochs // 4), gamma=0.1)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=(args.epochs // 4), gamma=args.lr_step)
 
 img_paths = list_nii_paths(args.img_dir)
 mask_paths = list_prostate_paths(args.mask_dir)
@@ -61,14 +63,17 @@ transform = transforms.Compose([
     transforms.ToPILImage(),
     transforms.Resize((args.size, args.size)),
     transforms.ToTensor(),
-    transforms.Lambda(lambda img: img / img.max() if img.max() > 0 else img)
+    #transforms.Lambda(lambda img: img / img.max() if img.max() > 0 else img)
 ])
 
 dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=args.seed, batch_size=args.batch_size,
                         prostate=args.prostate_mask, transform=transform)
+                        
+print(f'Dataset Size: ({len(dataset.train)*args.batch_size}, {len(dataset.val)*args.batch_size}, {len(dataset.test)*args.batch_size}) with norm')
 
-loss_function = DiceLoss(sigmoid=True)
-dice_metric = DiceMetric(include_background=True, reduction='mean')
+#loss_seg = DiceLoss(sigmoid=True, squared_pred=True, reduction='mean')
+loss_ce = nn.BCEWithLogitsLoss(reduction="mean")
+dice_metric = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
 
 dir = f'{args.prostate_mask*"pro-"}{args.model}'
 
@@ -90,7 +95,8 @@ print('Starting Training')
 device = torch.device('cuda'if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 
-best_metric = 0
+best_metric = float('inf')
+#best_metric = 0
 best_metric_epoch = 0
 train_loss = []
 train_dice = []
@@ -100,23 +106,27 @@ val_dice = []
 for epoch in range(args.epochs):
     model.train()
     epoch_loss = 0
-    for batch_data in dataset.train:
+    for step, batch_data in enumerate(dataset.train):
         inputs, labels = batch_data
         inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
         outputs = model(inputs)
-
-        loss = loss_function(outputs, labels)
+        
+        #loss = loss_seg(outputs, labels) + loss_ce(outputs, labels.float())
+        loss = loss_ce(outputs, labels)
         loss.backward()
         optimizer.step()
         epoch_loss += loss.item()
         
         outputs = torch.sigmoid(outputs)
-        dice_metric(y_pred=outputs, y=labels)
+        outputs_norm = outputs / outputs.max()
+        outputs_binary = (outputs_norm > 0.5).float()
+        dice_metric(y_pred=outputs_binary, y=labels)
 
     train_metric = dice_metric.aggregate().item()
     dice_metric.reset()
-
+    
+    epoch_loss /= step
     train_loss.append(epoch_loss)
     train_dice.append(train_metric)
 
@@ -127,30 +137,39 @@ for epoch in range(args.epochs):
         model.eval()
         with torch.no_grad():
             epoch_loss = 0
-            for val_data in dataset.val:
+            for step, val_data in enumerate(dataset.val):
                 val_inputs, val_labels = val_data
                 val_inputs, val_labels = val_inputs.to(device), val_labels.to(device)
                 val_outputs = model(val_inputs)
 
-                loss = loss_function(val_outputs, val_labels)
+                #loss = loss_seg(val_outputs, val_labels) + loss_ce(val_outputs, val_labels.float())
+                loss = loss_ce(val_outputs, val_labels)
                 epoch_loss += loss.item()
                 val_outputs = torch.sigmoid(val_outputs)
-                dice_metric(y_pred=val_outputs, y=val_labels)
+                val_outputs_norm = val_outputs / val_outputs.max()
+                val_outputs_binary = (val_outputs_norm > 0.5).float()
+                dice_metric(y_pred=val_outputs_binary, y=val_labels)
 
             val_metric = dice_metric.aggregate().item()
             dice_metric.reset()
-
+            
+            epoch_loss /= step
             val_loss.append(epoch_loss)
             val_dice.append(val_metric)
-
-            if args.save and val_metric > best_metric:
-                best_metric = val_metric
+                
+            if epoch_loss < best_metric:
+                best_metric = epoch_loss
                 best_metric_epoch = epoch + 1
-                torch.save(model.state_dict(), weight_path)
+                if args.save:
+                    torch.save(model.state_dict(), weight_path)
+                    print(f"Saving new best model, best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}")
+                else:
+                    print(f"Best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}")
+                    
                 no_improvement = 0
-                print(f"Saving new best model, best metric: {best_metric} at epoch: {best_metric_epoch}")
 
-print(f'Training completed, best metric: {best_metric} at epoch: {best_metric_epoch} saved at: {weight_path}')
+
+print(f'Training completed, best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}')
 
 if args.test:
     print('Starting Testing')
@@ -160,18 +179,22 @@ if args.test:
     model.eval()
     with torch.no_grad():
         test_loss = 0
-        for test_data in dataset.test:
+        for step, test_data in enumerate(dataset.test):
             test_inputs, test_labels = test_data
             test_inputs, test_labels = test_inputs.to(device), test_labels.to(device)
             test_outputs = model(test_inputs)
 
-            loss = loss_function(test_outputs, test_labels)
+            #loss = loss_seg(test_outputs, test_labels) + loss_ce(test_outputs, test_labels.float())
+            loss = loss_ce(test_outputs, test_labels)
             test_loss += loss.item()
             test_outputs = torch.sigmoid(test_outputs)
-            dice_metric(y_pred=test_outputs, y=test_labels)
+            test_outputs_norm = test_outputs / test_outputs.max()
+            test_outputs_binary = (test_outputs_norm > 0.5).float()
+            dice_metric(y_pred=test_outputs_binary, y=test_labels)
 
         test_dice = dice_metric.aggregate().item()
     
+    test_loss /= step
     end_time = perf_counter()
     elapsed_time = end_time - start_time
     print(f'test loss: {test_loss:.4f}, test dice: {test_dice:.4f}, total time: {elapsed_time}')

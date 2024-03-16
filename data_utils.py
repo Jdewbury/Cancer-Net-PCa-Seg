@@ -38,21 +38,21 @@ def nib_to_numpy(directory):
     Yields:
         Numpy array of type uint8.
     """
-    image = nib.load(directory).dataobj
-    return np.array(image).astype(np.uint8)
-    
-def nib_to_numpy(directory):
-    """Load an image using nibabel, and convert it to a numpy array.
-
-    Args:
-        directory: Directory path to convert nib file to numpy array.
-
-    Yields:
-        Numpy array of image.
-    """
     img = nib.load(directory).get_fdata()
-    img = img.astype(np.float32)
-    return img
+    img = np.nan_to_num(img)
+    img_np = np.array(img).astype(np.uint8)
+    img_f = img_np.astype(float)
+    img_f32 = img_f.astype(np.float32)
+    
+    img_linear_window = [img_f32.min(), img_f32.max()]
+
+    img_clip = np.clip(img_f32, *img_linear_window)
+    
+    norm_img = (img_clip - img_linear_window[0]) / (
+        img_linear_window[1] - img_linear_window[0]
+    )
+    
+    return norm_img
 
 def visualize_sample(img_tensor, label_tensor, img_size=(7, 3), pred_tensor=None):
     """Visualizes set of samples to compare image, label, and predicted image (optional).
@@ -66,6 +66,7 @@ def visualize_sample(img_tensor, label_tensor, img_size=(7, 3), pred_tensor=None
     Yields:
         Single row plot of images.
     """
+    
     img = img_tensor.numpy().squeeze()
     label = label_tensor.numpy().squeeze()
     
@@ -74,10 +75,12 @@ def visualize_sample(img_tensor, label_tensor, img_size=(7, 3), pred_tensor=None
         fig, axes = plt.subplots(1, 3, figsize=img_size)
         titles = ['Image', 'True Mask', 'Predicted Mask']
         images = [img, label, pred]
+
     else:
         fig, axes = plt.subplots(1, 2, figsize=img_size) 
         titles = ['Image', 'True Mask']
         images = [img, label]
+
     for ax, image, title in zip(axes, images, titles):
         ax.imshow(image, cmap='gray')
         ax.set_title(title)
