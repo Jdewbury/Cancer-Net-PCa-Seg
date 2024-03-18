@@ -97,6 +97,7 @@ if args.save:
     os.mkdir(weight_dir)
 
 print('Starting Training')
+start_time = perf_counter()
 
 device = torch.device('cuda'if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
@@ -174,13 +175,13 @@ for epoch in range(args.epochs):
                     
                 no_improvement = 0
 
-
-print(f'Training completed, best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}')
+end_time = perf_counter()
+elapsed_time = end_time - start_time
+print(f'Training completed, best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}, total time: {elapsed_time}')
 
 if args.test:
     print('Starting Testing')
     model.load_state_dict(torch.load(weight_path))
-    start_time = perf_counter()
 
     model.eval()
     with torch.no_grad():
@@ -201,9 +202,7 @@ if args.test:
         test_dice = dice_metric.aggregate().item()
     
     test_loss /= step
-    end_time = perf_counter()
-    elapsed_time = end_time - start_time
-    print(f'test loss: {test_loss:.4f}, test dice: {test_dice:.4f}, total time: {elapsed_time}')
+    print(f'test loss: {test_loss:.4f}, test dice: {test_dice:.4f}')
 
 if args.save:
     print(f'Saving values at {unique_dir}')
