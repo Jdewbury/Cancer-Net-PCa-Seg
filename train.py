@@ -24,6 +24,7 @@ parser.add_argument('--prostate_mask', action='store_true', help='Flag to use pr
 parser.add_argument('--size', default=256, help='Desired size of image and mask.')
 parser.add_argument('--val_interval', default=2, type=int, help='Epoch interval for evaluation on validation set.')
 parser.add_argument('--lr_step', default=0.1, type=float, help='Epoch interval for evaluation on validation set.')
+parser.add_argument('--scheduler', default='step', type=str, help='Learning rate scheduler to use.')
 
 parser.add_argument('--save', action='store_true', help='Save best model weights.')
 parser.add_argument('--test', action='store_true', help='Evaluate model on test set.')
@@ -54,8 +55,11 @@ if args.model == 'unet':
     )
 
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.5, 0.999))
-#scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=(args.epochs // 4), gamma=args.lr_step)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=(args.epochs // 4), eta_min=0)
+
+if args.scheduler == 'step':
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=(args.epochs // 4), gamma=args.lr_step)
+if args.scheduler == 'cosine':
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=(args.epochs // 4), eta_min=0)
 
 
 img_paths = list_nii_paths(args.img_dir)
