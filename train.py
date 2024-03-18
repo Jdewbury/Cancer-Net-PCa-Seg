@@ -75,7 +75,7 @@ transform = transforms.Compose([
 dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=args.seed, batch_size=args.batch_size,
                         prostate=args.prostate_mask, transform=transform)
                         
-print(f'Dataset Size: ({len(dataset.train)*args.batch_size}, {len(dataset.val)*args.batch_size}, {len(dataset.test)*args.batch_size}) with CosineAnnealingLR')
+print(f'Dataset Size: ({len(dataset.train)*args.batch_size}, {len(dataset.val)*args.batch_size}, {len(dataset.test)*args.batch_size})')
 
 #loss_seg = DiceLoss(sigmoid=True, squared_pred=True, reduction='mean')
 loss_ce = nn.BCEWithLogitsLoss(reduction="mean")
