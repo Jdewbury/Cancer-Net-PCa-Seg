@@ -54,7 +54,9 @@ if args.model == 'unet':
     )
 
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.5, 0.999))
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=(args.epochs // 4), gamma=args.lr_step)
+#scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=(args.epochs // 4), gamma=args.lr_step)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=(args.epochs // 4), eta_min=0)
+
 
 img_paths = list_nii_paths(args.img_dir)
 mask_paths = list_prostate_paths(args.mask_dir)
@@ -69,7 +71,7 @@ transform = transforms.Compose([
 dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=args.seed, batch_size=args.batch_size,
                         prostate=args.prostate_mask, transform=transform)
                         
-print(f'Dataset Size: ({len(dataset.train)*args.batch_size}, {len(dataset.val)*args.batch_size}, {len(dataset.test)*args.batch_size}) with norm')
+print(f'Dataset Size: ({len(dataset.train)*args.batch_size}, {len(dataset.val)*args.batch_size}, {len(dataset.test)*args.batch_size}) with CosineAnnealingLR')
 
 #loss_seg = DiceLoss(sigmoid=True, squared_pred=True, reduction='mean')
 loss_ce = nn.BCEWithLogitsLoss(reduction="mean")
