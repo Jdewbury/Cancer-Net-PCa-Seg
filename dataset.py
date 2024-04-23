@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -5,9 +6,11 @@ from data_utils import nib_to_numpy
 import matplotlib.pyplot as plt
 
 class CancerNetPCa:
-    def __init__(self, img_path, mask_path, seed=42, batch_size=10, train_split=0.7, test_split=0.15, num_workers=2, prostate=False, transform=None):
+    def __init__(self, img_path, mask_path, seed=42, batch_size=10, train_split=0.7, test_split=0.15, prostate=False, transform=None):
         np.random.seed(seed)
-
+        num_workers = os.cpu_count()
+        num_workers = max(1, num_workers - 2)
+        
         dataset_size = len(img_path)
         idxs = np.arange(dataset_size)
         np.random.shuffle(idxs)

@@ -3,6 +3,8 @@ import glob
 import numpy as np
 import matplotlib.pyplot as plt
 import nibabel as nib
+import torch
+from collections import OrderedDict
 
 def list_nii_paths(directory):
     """Generator function to iterate over all nii files in a given directory.
@@ -137,3 +139,29 @@ def plot_metrics(directory):
 
     plot_single_metric(train_loss, train_dice, label='Training')
     plot_single_metric(val_loss, val_dice, label='Validation')
+    
+def load_weights(model, directory):
+    """Load in pre-trained model weights.
+
+    Args:
+        model: Model architecture to load weights.
+        directory: Directory path to model weights.
+
+    Yields:
+        Model with weights loaded.
+    """
+    pretrained_dict = torch.load(directory, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    new_state_dict = OrderedDict()
+
+    for k, v in pretrained_dict.items():
+        if 'conv' in k and v.dim() == 5:
+            middle_index = v.shape[2] // 2
+            adapted_v = v[:, :, middle_index, :, :] 
+            if adapted_v.shape == model.state_dict()[k].shape:
+                new_state_dict[k] = adapted_v
+        elif k in model.state_dict() and v.shape == model.state_dict()[k].shape:
+            new_state_dict[k] = v
+
+    model.load_state_dict(new_state_dict, strict=False)
+    
+    return model

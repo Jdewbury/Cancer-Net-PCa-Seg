@@ -6,7 +6,7 @@ import numpy as np
 import monai
 from monai.losses import DiceLoss
 from monai.metrics import DiceMetric
-from data_utils import list_nii_paths, list_prostate_paths, visualize_sample
+from data_utils import list_nii_paths, list_prostate_paths, visualize_sample, load_weights
 from dataset import CancerNetPCa
 
 import os
@@ -25,6 +25,7 @@ parser.add_argument('--size', default=256, help='Desired size of image and mask.
 parser.add_argument('--val_interval', default=2, type=int, help='Epoch interval for evaluation on validation set.')
 parser.add_argument('--lr_step', default=0.1, type=float, help='Epoch interval for evaluation on validation set.')
 parser.add_argument('--scheduler', default='step', type=str, help='Learning rate scheduler to use.')
+parser.add_argument('--weights', default=None, type=str, help='Path to pretrained model weights to use.')
 
 parser.add_argument('--save', action='store_true', help='Save best model weights.')
 parser.add_argument('--test', action='store_true', help='Evaluate model on test set.')
@@ -37,7 +38,7 @@ if args.model == 'segresnet':
         spatial_dims=2,
         blocks_down=[1, 2, 2, 4],
         blocks_up=[1, 1, 1],
-        init_filters=16,
+        init_filters=32,
         in_channels=1,
         out_channels=1,
         dropout_prob=0.2,
@@ -53,12 +54,17 @@ if args.model == 'unet':
         strides=(2, 2, 2, 2),
         num_res_units=2,
     )
+    
+if args.weights:
+    model = load_weights(model, args.weights)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.5, 0.999))
 
 if args.scheduler == 'step':
+    print('Using StepLR')
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=(args.epochs // 4), gamma=args.lr_step)
 if args.scheduler == 'cosine':
+    print('Using CosineAnnealingLR')
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=(args.epochs // 4), eta_min=0)
 
 
@@ -75,7 +81,7 @@ transform = transforms.Compose([
 dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=args.seed, batch_size=args.batch_size,
                         prostate=args.prostate_mask, transform=transform)
                         
-print(f'Dataset Size: ({len(dataset.train)*args.batch_size}, {len(dataset.val)*args.batch_size}, {len(dataset.test)*args.batch_size}) with CosineAnnealingLR')
+print(f'Dataset Size: ({len(dataset.train)*args.batch_size}, {len(dataset.val)*args.batch_size}, {len(dataset.test)*args.batch_size})')
 
 #loss_seg = DiceLoss(sigmoid=True, squared_pred=True, reduction='mean')
 loss_ce = nn.BCEWithLogitsLoss(reduction="mean")
