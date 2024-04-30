@@ -185,6 +185,13 @@ end_time = perf_counter()
 elapsed_time = end_time - start_time
 print(f'Training completed, best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}, total time: {elapsed_time}')
 
+if args.save:
+    print(f'Saving values at {unique_dir}')
+    np.save(f'{unique_dir}/train-dice.npy', train_dice)
+    np.save(f'{unique_dir}/train-loss.npy', train_loss)
+    np.save(f'{unique_dir}/val-dice.npy', val_dice)
+    np.save(f'{unique_dir}/val-loss.npy', val_loss)
+
 if args.test:
     print('Starting Testing')
     model.load_state_dict(torch.load(weight_path))
@@ -210,15 +217,9 @@ if args.test:
     test_loss /= step
     print(f'test loss: {test_loss:.4f}, test dice: {test_dice:.4f}')
 
-if args.save:
-    print(f'Saving values at {unique_dir}')
-
-    np.save(f'{unique_dir}/train-dice.npy', train_dice)
-    np.save(f'{unique_dir}/train-loss.npy', train_loss)
-    np.save(f'{unique_dir}/val-dice.npy', val_dice)
-    np.save(f'{unique_dir}/val-loss.npy', val_loss)
-    np.save(f'{unique_dir}/test-dice.npy', test_dice)
-    np.save(f'{unique_dir}/test-loss.npy', test_loss)
+    if args.save:
+        np.save(f'{unique_dir}/test-dice.npy', test_dice)
+        np.save(f'{unique_dir}/test-loss.npy', test_loss)
 
 
 
