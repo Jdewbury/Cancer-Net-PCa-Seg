@@ -26,7 +26,6 @@ parser.add_argument('--val_interval', default=2, type=int, help='Epoch interval 
 parser.add_argument('--lr_step', default=0.1, type=float, help='Epoch interval for evaluation on validation set.')
 parser.add_argument('--scheduler', default='step', type=str, help='Learning rate scheduler to use.')
 parser.add_argument('--weights', default=None, type=str, help='Path to pretrained model weights to use.')
-
 parser.add_argument('--save', action='store_true', help='Save best model weights.')
 parser.add_argument('--test', action='store_true', help='Evaluate model on test set.')
 
@@ -54,6 +53,25 @@ if args.model == 'unet':
         strides=(2, 2, 2, 2),
         num_res_units=2,
     )
+
+if args.model == 'swinunetr':
+    print('Using SwinUNETR')
+    model = monai.networks.nets.SwinUNETR(
+        spatial_dims=2,
+        in_channels=1,
+        out_channels=1,
+        img_size=(args.size, args.size)
+    )
+
+if args.model == 'attentionunet':
+    print('Using AttentionUNet')
+    model = monai.networks.nets.AttentionUnet(
+        spatial_dims=2,
+        in_channels=1,
+        out_channels=1,
+        channels=(16, 32, 64, 128, 256),
+        strides=(2, 2, 2, 2)
+    )
     
 if args.weights:
     model = load_weights(model, args.weights)
@@ -75,7 +93,6 @@ transform = transforms.Compose([
     transforms.ToPILImage(),
     transforms.Resize((args.size, args.size)),
     transforms.ToTensor(),
-    #transforms.Lambda(lambda img: img / img.max() if img.max() > 0 else img)
 ])
 
 dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=args.seed, batch_size=args.batch_size,
@@ -84,18 +101,18 @@ dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=args.seed,
 print(f'Dataset Size: ({len(dataset.train)*args.batch_size}, {len(dataset.val)*args.batch_size}, {len(dataset.test)*args.batch_size})')
 
 #loss_seg = DiceLoss(sigmoid=True, squared_pred=True, reduction='mean')
-loss_ce = nn.BCEWithLogitsLoss(reduction="mean")
-dice_metric = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
+loss_ce = nn.BCEWithLogitsLoss(reduction='mean')
+dice_metric = DiceMetric(include_background=True, reduction='mean', get_not_nans=False)
 
 dir = f'{args.prostate_mask*"pro-"}{args.model}'
 
 if args.save:
     count = 1
-    unique_dir = f"scores/{dir}-{count}"
+    unique_dir = f'scores/{dir}-{count}'
     
     while os.path.exists(unique_dir):
         count += 1
-        unique_dir = f"scores/{dir}-{count}"
+        unique_dir = f'scores/{dir}-{count}'
     
     weight_dir = f'models/{dir}-{count}'
     weight_path = f'{weight_dir}/CancerNetPCa.pth'
@@ -109,7 +126,6 @@ device = torch.device('cuda'if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 
 best_metric = float('inf')
-#best_metric = 0
 best_metric_epoch = 0
 train_loss = []
 train_dice = []
@@ -174,10 +190,10 @@ for epoch in range(args.epochs):
                 best_metric = epoch_loss
                 best_metric_epoch = epoch + 1
                 if args.save:
+                    print(f'Saving new best model, best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}')
                     torch.save(model.state_dict(), weight_path)
-                    print(f"Saving new best model, best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}")
                 else:
-                    print(f"Best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}")
+                    print(f'Best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}')
                     
                 no_improvement = 0
 
@@ -185,18 +201,19 @@ end_time = perf_counter()
 elapsed_time = end_time - start_time
 print(f'Training completed, best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}, total time: {elapsed_time}')
 
-if args.save:
-    print(f'Saving values at {unique_dir}')
-    np.save(f'{unique_dir}/train-dice.npy', train_dice)
-    np.save(f'{unique_dir}/train-loss.npy', train_loss)
-    np.save(f'{unique_dir}/val-dice.npy', val_dice)
-    np.save(f'{unique_dir}/val-loss.npy', val_loss)
+scores = {
+    'time': elapsed_time,
+    'train-loss': train_loss,
+    'train-dice': train_dice,
+    'val-loss': val_loss,
+    'val-dice': val_dice
+}
 
 if args.test:
     print('Starting Testing')
     model.load_state_dict(torch.load(weight_path))
-
     model.eval()
+
     with torch.no_grad():
         test_loss = 0
         for step, test_data in enumerate(dataset.test):
@@ -217,9 +234,16 @@ if args.test:
     test_loss /= step
     print(f'test loss: {test_loss:.4f}, test dice: {test_dice:.4f}')
 
-    if args.save:
-        np.save(f'{unique_dir}/test-dice.npy', test_dice)
-        np.save(f'{unique_dir}/test-loss.npy', test_loss)
+    test_scores = {
+        'test-loss': test_loss,
+        'test-dice': test_dice,
+    }
+
+    scores.update(test_scores)
+
+if args.save:
+    print(f'Saving values at {unique_dir}')
+    np.save(f'{unique_dir}/scores.npy', scores)
 
 
 
