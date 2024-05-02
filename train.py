@@ -30,6 +30,7 @@ parser.add_argument('--save', action='store_true', help='Save best model weights
 parser.add_argument('--test', action='store_true', help='Evaluate model on test set.')
 
 args = parser.parse_args()
+args_dict = vars(args)
 
 if args.model == 'segresnet':
     print('Using SegResNet')
@@ -42,7 +43,6 @@ if args.model == 'segresnet':
         out_channels=1,
         dropout_prob=0.2,
     )
-
 if args.model == 'unet':
     print('Using UNet')
     model = monai.networks.nets.UNet(
@@ -53,7 +53,6 @@ if args.model == 'unet':
         strides=(2, 2, 2, 2),
         num_res_units=2,
     )
-
 if args.model == 'swinunetr':
     print('Using SwinUNETR')
     model = monai.networks.nets.SwinUNETR(
@@ -62,7 +61,6 @@ if args.model == 'swinunetr':
         out_channels=1,
         img_size=(args.size, args.size)
     )
-
 if args.model == 'attentionunet':
     print('Using AttentionUNet')
     model = monai.networks.nets.AttentionUnet(
@@ -135,6 +133,7 @@ val_dice = []
 for epoch in range(args.epochs):
     model.train()
     epoch_loss = 0
+
     for step, batch_data in enumerate(dataset.train):
         inputs, labels = batch_data
         inputs, labels = inputs.to(device), labels.to(device)
@@ -164,8 +163,10 @@ for epoch in range(args.epochs):
 
     if (epoch + 1) % int(args.val_interval) == 0:
         model.eval()
+
         with torch.no_grad():
             epoch_loss = 0
+
             for step, val_data in enumerate(dataset.val):
                 val_inputs, val_labels = val_data
                 val_inputs, val_labels = val_inputs.to(device), val_labels.to(device)
@@ -216,6 +217,7 @@ if args.test:
 
     with torch.no_grad():
         test_loss = 0
+
         for step, test_data in enumerate(dataset.test):
             test_inputs, test_labels = test_data
             test_inputs, test_labels = test_inputs.to(device), test_labels.to(device)
@@ -244,6 +246,7 @@ if args.test:
 if args.save:
     print(f'Saving values at {unique_dir}')
     np.save(f'{unique_dir}/scores.npy', scores)
+    np.save(f'{unique_dir}/params.npy', args_dict)
 
 
 
