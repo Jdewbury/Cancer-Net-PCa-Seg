@@ -8,7 +8,7 @@ from monai.losses import DiceLoss
 from monai.metrics import DiceMetric
 from data_utils import list_nii_paths, list_prostate_paths, visualize_sample, load_weights
 from dataset import CancerNetPCa
-from lightMUNet import LightMUNet
+from mamba_unet import LightMUNet
 
 import os
 from time import perf_counter
@@ -71,8 +71,8 @@ if args.model == 'attentionunet':
         channels=(16, 32, 64, 128, 256),
         strides=(2, 2, 2, 2)
     )
-if args.model == 'lightmunet':
-    print('Using LightMUNet')
+if args.model == 'mambaunet':
+    print('Using MambaUNet')
     model = LightMUNet(
         spatial_dims=2,
         in_channels=1,
