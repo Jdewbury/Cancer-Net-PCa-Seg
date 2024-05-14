@@ -39,10 +39,8 @@ class MambaLayer(nn.Module):
         self.skip_scale= nn.Parameter(torch.ones(1))
     
     def forward(self, x):
-        print(f"Input shape: {x.shape}")  # Debugging: check input shape
         if x.dtype == torch.float16:
             x = x.type(torch.float32)
-            print("Warning: Converting input to float32")
         B, C = x.shape[:2]
         assert C == self.input_dim
         n_tokens = x.shape[2:].numel()
@@ -53,7 +51,6 @@ class MambaLayer(nn.Module):
         x_mamba = self.norm(x_mamba)
         x_mamba = self.proj(x_mamba)
         out = x_mamba.transpose(-1, -2).reshape(B, self.output_dim, *img_dims)
-        print(f"Output shape: {out.shape}")
         return out
 
 
