@@ -22,11 +22,13 @@ parser.add_argument('--model', default='unet', type=str, help='Model architectur
 parser.add_argument('--img_dir', default='data/images', type=str, help='Directory containing image data.')
 parser.add_argument('--mask_dir', default='data_2', type=str, help='Directory containing mask data.')
 parser.add_argument('--prostate_mask', action='store_true', help='Flag to use prostate mask.')
-parser.add_argument('--size', default=256, help='Desired size of image and mask.')
+parser.add_argument('--size', default=256, type=int, help='Desired size of image and mask.')
 parser.add_argument('--val_interval', default=2, type=int, help='Epoch interval for evaluation on validation set.')
 parser.add_argument('--lr_step', default=0.1, type=float, help='Epoch interval for evaluation on validation set.')
-parser.add_argument('--scheduler', default='step', type=str, help='Learning rate scheduler to use.')
+parser.add_argument('--scheduler', default=None, type=str, help='Learning rate scheduler to use.')
+parser.add_argument('--optimizer', default='adam', type=str, help='Learning rate scheduler to use.')
 parser.add_argument('--weights', default=None, type=str, help='Path to pretrained model weights to use.')
+parser.add_argument('--init_filters', default=32, type=int, help='Number of filters for model.')
 parser.add_argument('--save', action='store_true', help='Save best model weights.')
 parser.add_argument('--test', action='store_true', help='Evaluate model on test set.')
 
@@ -39,7 +41,7 @@ if args.model == 'segresnet':
         spatial_dims=2,
         blocks_down=[1, 2, 2, 4],
         blocks_up=[1, 1, 1],
-        init_filters=32,
+        init_filters=args.init_filters,
         in_channels=1,
         out_channels=1,
         dropout_prob=0.2,
@@ -77,7 +79,7 @@ if args.model == 'mambaunet':
         spatial_dims=2,
         in_channels=1,
         out_channels=1,
-        init_filters=32,
+        init_filters=args.init_filters,
         blocks_down=(1, 2, 2, 4),
         blocks_up=(1, 1, 1)
     )
@@ -86,7 +88,15 @@ if args.model == 'mambaunet':
 if args.weights:
     model = load_weights(model, args.weights)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.5, 0.999))
+if args.optimizer == 'adam':
+    print('Using Adam optimizer')
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.5, 0.999))
+elif args.optimizer == 'adamw':
+    print('Using AdamW optimizer')
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, betas=(0.5, 0.999))
+elif args.optimizer == 'sgd':
+    print('Using SGD optimizer')
+    optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
 
 if args.scheduler == 'step':
     print('Using StepLR')
@@ -94,7 +104,8 @@ if args.scheduler == 'step':
 if args.scheduler == 'cosine':
     print('Using CosineAnnealingLR')
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=(args.epochs // 4), eta_min=0)
-
+else:
+    print('No LR scheduler')
 
 img_paths = list_nii_paths(args.img_dir)
 mask_paths = list_prostate_paths(args.mask_dir)
@@ -130,7 +141,6 @@ if args.save:
     os.mkdir(weight_dir)
 
 print('Starting Training')
-start_time = perf_counter()
 
 device = torch.device('cuda'if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
@@ -142,7 +152,10 @@ train_dice = []
 val_loss = []
 val_dice = []
 
+elapsed_time = 0
+
 for epoch in range(args.epochs):
+    start_time = perf_counter()
     model.train()
     epoch_loss = 0
 
@@ -170,8 +183,11 @@ for epoch in range(args.epochs):
     train_loss.append(epoch_loss)
     train_dice.append(train_metric)
 
-    scheduler.step()
-    print(f'epoch {epoch + 1}, learning rate: {scheduler.get_last_lr()[0]:.1e}, train loss: {epoch_loss:.4f}, train dice: {train_metric:.4f}')
+    if args.scheduler:
+        scheduler.step()
+        print(f'epoch {epoch + 1}, learning rate: {scheduler.get_last_lr()[0]:.1e}, train loss: {epoch_loss:.4f}, train dice: {train_metric:.4f}')
+    else:
+        print(f'epoch {epoch + 1}, learning rate: {args.learning_rate}, train loss: {epoch_loss:.4f}, train dice: {train_metric:.4f}')
 
     if (epoch + 1) % int(args.val_interval) == 0:
         model.eval()
@@ -210,9 +226,10 @@ for epoch in range(args.epochs):
                     
                 no_improvement = 0
 
-end_time = perf_counter()
-elapsed_time = end_time - start_time
-print(f'Training completed, best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}, total time: {elapsed_time}')
+    end_time = perf_counter()
+    elapsed_time += (end_time - start_time)
+
+print(f'Training completed, best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}, total train time: {elapsed_time}')
 
 scores = {
     'time': elapsed_time,
