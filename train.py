@@ -145,7 +145,8 @@ print('Starting Training')
 device = torch.device('cuda'if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 
-best_metric = float('inf')
+#best_metric = float('inf') # if using best val loss
+best_metric = 0 # if using best val dice
 best_metric_epoch = 0
 train_loss = []
 train_dice = []
@@ -215,8 +216,8 @@ for epoch in range(args.epochs):
             val_loss.append(epoch_loss)
             val_dice.append(val_metric)
                 
-            if epoch_loss < best_metric:
-                best_metric = epoch_loss
+            if val_metric > best_metric:
+                best_metric = val_metric
                 best_metric_epoch = epoch + 1
                 if args.save:
                     print(f'Saving new best model, best metric loss: {epoch_loss}, with dice: {val_metric} at epoch: {best_metric_epoch}')
