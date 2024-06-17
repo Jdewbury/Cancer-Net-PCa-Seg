@@ -264,7 +264,7 @@ if args.test:
         test_dice = dice_metric.aggregate().item()
     
     test_loss /= step
-    print(f'test loss: {test_loss:.4f}, test dice: {test_dice:.4f}')
+    print(f'Test loss: {test_loss:.4f}, Test dice: {test_dice:.4f}')
 
     test_scores = {
         'test-loss': test_loss,
