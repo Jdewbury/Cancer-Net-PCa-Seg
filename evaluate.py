@@ -9,8 +9,6 @@ from monai.metrics import DiceMetric
 from data_utils import list_nii_paths, list_prostate_paths
 from dataset import CancerNetPCa
 from mamba_unet import LightMUNet
-from calflops import calculate_flops
-from fvcore.nn import FlopCountAnalysis, parameter_count_table
 from thop import profile
 
 import os
@@ -169,7 +167,7 @@ if args.save:
     np.save(f'{dir}/scores.npy', scores)
 
 if args.params:
-    input_tensor = torch.randn(batch_size, 1, size, size).to(device)
+    input_tensor = torch.randn(12, 1, 512, 512).to(device)
 
     flops, params = profile(model, inputs=(input_tensor,))
 
