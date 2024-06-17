@@ -167,7 +167,7 @@ if args.save:
     np.save(f'{dir}/scores.npy', scores)
 
 if args.params:
-    input_tensor = torch.randn(12, 1, 512, 512).to(device)
+    input_tensor = torch.randn(batch_size, 1, size, size).to(device)
 
     flops, params = profile(model, inputs=(input_tensor,))
 
