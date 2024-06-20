@@ -29,7 +29,7 @@ parser.add_argument('--scheduler', default=None, type=str, help='Learning rate s
 parser.add_argument('--optimizer', default='adam', type=str, help='Learning rate scheduler to use.')
 parser.add_argument('--weights', default=None, type=str, help='Path to pretrained model weights to use.')
 parser.add_argument('--init_filters', default=32, type=int, help='Number of filters for model.')
-parser.add_argument('--save', action='store_true', help='Save best model weights.')
+parser.add_argument('--save', action='store_true', help='Save results.')
 parser.add_argument('--test', action='store_true', help='Evaluate model on test set.')
 
 args = parser.parse_args()
