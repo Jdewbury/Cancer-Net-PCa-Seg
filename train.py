@@ -6,7 +6,7 @@ import numpy as np
 import monai
 from monai.losses import DiceLoss
 from monai.metrics import DiceMetric
-from data_utils import list_nii_paths, list_prostate_paths, visualize_sample, load_weights
+from data_utils import list_nii_paths, list_prostate_paths, load_weights
 from dataset import CancerNetPCa
 from mamba_unet import LightMUNet
 
@@ -33,7 +33,8 @@ parser.add_argument('--save', action='store_true', help='Save results.')
 parser.add_argument('--test', action='store_true', help='Evaluate model on test set.')
 
 args = parser.parse_args()
-args_dict = vars(args)
+default_args = {action.dest: action.default for action in parser._actions if action.dest != 'help'}
+args_dict = {**default_args, **vars(args)}
 
 if args.model == 'segresnet':
     print('Using SegResNet')
@@ -84,7 +85,6 @@ if args.model == 'mambaunet':
         blocks_up=(1, 1, 1)
     )
 
-    
 if args.weights:
     model = load_weights(model, args.weights)
 

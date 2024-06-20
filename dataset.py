@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader
 from data_utils import nib_to_numpy
 
 class CancerNetPCa:
