@@ -240,39 +240,6 @@ scores = {
     'val-dice': val_dice
 }
 
-if args.test:
-    print('Starting Testing')
-    model.load_state_dict(torch.load(weight_path))
-    model.eval()
-
-    with torch.no_grad():
-        test_loss = 0
-
-        for step, test_data in enumerate(dataset.test):
-            test_inputs, test_labels = test_data
-            test_inputs, test_labels = test_inputs.to(device), test_labels.to(device)
-            test_outputs = model(test_inputs)
-
-            #loss = loss_seg(test_outputs, test_labels) + loss_ce(test_outputs, test_labels.float())
-            loss = loss_ce(test_outputs, test_labels)
-            test_loss += loss.item()
-            test_outputs = torch.sigmoid(test_outputs)
-            test_outputs_norm = test_outputs / test_outputs.max()
-            test_outputs_binary = (test_outputs_norm > 0.5).float()
-            dice_metric(y_pred=test_outputs_binary, y=test_labels)
-
-        test_dice = dice_metric.aggregate().item()
-    
-    test_loss /= step
-    print(f'Test loss: {test_loss:.4f}, Test dice: {test_dice:.4f}')
-
-    test_scores = {
-        'test-loss': test_loss,
-        'test-dice': test_dice,
-    }
-
-    scores.update(test_scores)
-
 if args.save:
     print(f'Saving values at {unique_dir}')
     np.save(f'{unique_dir}/scores.npy', scores)

@@ -1,9 +1,7 @@
 __pycache__
+env/
 data/
 data_2/
-test.ipynb
-setup.ipynb
 models/
 scores/
-my_env/
 evaluate/
