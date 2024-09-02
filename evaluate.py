@@ -3,12 +3,10 @@ import torch
 import torch.nn as nn
 from torchvision import transforms
 import numpy as np
-import monai
-from monai.losses import DiceLoss
 from monai.metrics import DiceMetric
-from data_utils import list_nii_paths, list_prostate_paths
+from utils.data_utils import list_nii_paths, list_prostate_paths
 from dataset import CancerNetPCa
-from mamba_unet import LightMUNet
+from utils.models import get_model
 from thop import profile
 
 import os
@@ -34,11 +32,11 @@ if args.save:
     dir = f'evaluate/{args.model}'
     os.mkdir(dir)
 
-# check if using single weight, or group of weights
+# check if evaluating single model, or set of models
 if args.model.count('-') > 0:
-    model = args.model.split('-')[0]
+    model_name = args.model.split('-')[0]
 else:
-    model = args.model
+    model_name = args.model
 
 for score in os.listdir(args.param_dir):
     if score.startswith(args.model):
@@ -54,49 +52,7 @@ for score in os.listdir(args.param_dir):
         else:
             prostate_mask = False
 
-        if model == 'segresnet':
-            model = monai.networks.nets.SegResNet(
-                spatial_dims=2,
-                blocks_down=[1, 2, 2, 4],
-                blocks_up=[1, 1, 1],
-                init_filters=init_filters,
-                in_channels=1,
-                out_channels=1,
-                dropout_prob=0.2,
-            )
-        if model == 'unet':
-            model = monai.networks.nets.UNet(
-                spatial_dims=2,
-                in_channels=1,
-                out_channels=1,
-                channels=(16, 32, 64, 128, 256),
-                strides=(2, 2, 2, 2),
-                num_res_units=2,
-            )
-        if model == 'swinunetr':
-            model = monai.networks.nets.SwinUNETR(
-                spatial_dims=2,
-                in_channels=1,
-                out_channels=1,
-                img_size=(size, size)
-            )
-        if model == 'attentionunet':
-            model = monai.networks.nets.AttentionUnet(
-                spatial_dims=2,
-                in_channels=1,
-                out_channels=1,
-                channels=(16, 32, 64, 128, 256),
-                strides=(2, 2, 2, 2)
-            )
-        if model == 'mambaunet':
-            model = LightMUNet(
-                spatial_dims=2,
-                in_channels=1,
-                out_channels=1,
-                init_filters=init_filters,
-                blocks_down=(1, 2, 2, 4),
-                blocks_up=(1, 1, 1)
-            )
+        model = get_model(model_name, init_filters, size)
 
         img_paths = list_nii_paths(args.img_dir)
         mask_paths = list_prostate_paths(args.mask_dir)
@@ -112,7 +68,6 @@ for score in os.listdir(args.param_dir):
         
         print(len(dataset.test)*batch_size)
 
-        #loss_seg = DiceLoss(sigmoid=True, squared_pred=True, reduction='mean')
         loss_ce = nn.BCEWithLogitsLoss(reduction='mean')
         dice_metric = DiceMetric(include_background=True, reduction='mean', get_not_nans=False)
 
@@ -134,7 +89,6 @@ for score in os.listdir(args.param_dir):
                 test_inputs, test_labels = test_inputs.to(device), test_labels.to(device)
                 test_outputs = model(test_inputs)
 
-                #loss = loss_seg(test_outputs, test_labels) + loss_ce(test_outputs, test_labels.float())
                 loss = loss_ce(test_outputs, test_labels)
                 test_loss += loss.item()
                 test_outputs = torch.sigmoid(test_outputs)

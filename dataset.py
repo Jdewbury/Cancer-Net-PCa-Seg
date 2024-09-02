@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
-from data_utils import nib_to_numpy
+from utils.data_utils import nib_to_numpy
 
 class CancerNetPCa:
     def __init__(self, img_path, mask_path, seed=42, batch_size=10, train_split=0.7, test_split=0.15, prostate=False, transform=None):
@@ -26,6 +26,8 @@ class CancerNetPCa:
         train_dataset = CancerNetPCaDataset(img_path[train_idx], mask_path[:, train_idx], prostate, transform)
         val_dataset = CancerNetPCaDataset(img_path[val_idx], mask_path[:, val_idx], prostate, transform)
         test_dataset = CancerNetPCaDataset(img_path[test_idx], mask_path[:, test_idx], prostate, transform)
+
+        print(len(train_dataset), len(val_dataset), len(test_dataset))
 
         self.train = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
         self.val = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers)

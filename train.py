@@ -3,12 +3,10 @@ import torch
 import torch.nn as nn
 from torchvision import transforms
 import numpy as np
-import monai
-from monai.losses import DiceLoss
 from monai.metrics import DiceMetric
-from data_utils import list_nii_paths, list_prostate_paths, load_weights
+from utils.data_utils import list_nii_paths, list_prostate_paths, load_weights
 from dataset import CancerNetPCa
-from mamba_unet import LightMUNet
+from utils.models import get_model
 
 import os
 from time import perf_counter
@@ -22,7 +20,7 @@ parser.add_argument('--model', default='unet', type=str, help='Model architectur
 parser.add_argument('--img_dir', default='data/images', type=str, help='Directory containing image data.')
 parser.add_argument('--mask_dir', default='data_2', type=str, help='Directory containing mask data.')
 parser.add_argument('--prostate_mask', action='store_true', help='Flag to use prostate mask.')
-parser.add_argument('--size', default=256, type=int, help='Desired size of image and mask.')
+parser.add_argument('--size', default=128, type=int, help='Desired size of image and mask.')
 parser.add_argument('--val_interval', default=2, type=int, help='Epoch interval for evaluation on validation set.')
 parser.add_argument('--lr_step', default=0.1, type=float, help='Epoch interval for evaluation on validation set.')
 parser.add_argument('--scheduler', default=None, type=str, help='Learning rate scheduler to use.')
@@ -36,54 +34,7 @@ args = parser.parse_args()
 default_args = {action.dest: action.default for action in parser._actions if action.dest != 'help'}
 args_dict = {**default_args, **vars(args)}
 
-if args.model == 'segresnet':
-    print('Using SegResNet')
-    model = monai.networks.nets.SegResNet(
-        spatial_dims=2,
-        blocks_down=[1, 2, 2, 4],
-        blocks_up=[1, 1, 1],
-        init_filters=args.init_filters,
-        in_channels=1,
-        out_channels=1,
-        dropout_prob=0.2,
-    )
-if args.model == 'unet':
-    print('Using UNet')
-    model = monai.networks.nets.UNet(
-        spatial_dims=2,
-        in_channels=1,
-        out_channels=1,
-        channels=(16, 32, 64, 128, 256),
-        strides=(2, 2, 2, 2),
-        num_res_units=2,
-    )
-if args.model == 'swinunetr':
-    print('Using SwinUNETR')
-    model = monai.networks.nets.SwinUNETR(
-        spatial_dims=2,
-        in_channels=1,
-        out_channels=1,
-        img_size=(args.size, args.size)
-    )
-if args.model == 'attentionunet':
-    print('Using AttentionUNet')
-    model = monai.networks.nets.AttentionUnet(
-        spatial_dims=2,
-        in_channels=1,
-        out_channels=1,
-        channels=(16, 32, 64, 128, 256),
-        strides=(2, 2, 2, 2)
-    )
-if args.model == 'mambaunet':
-    print('Using MambaUNet')
-    model = LightMUNet(
-        spatial_dims=2,
-        in_channels=1,
-        out_channels=1,
-        init_filters=args.init_filters,
-        blocks_down=(1, 2, 2, 4),
-        blocks_up=(1, 1, 1)
-    )
+model = get_model(args.model, args.init_filters, args.size)
 
 if args.weights:
     model = load_weights(model, args.weights)
@@ -121,7 +72,6 @@ dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=args.seed,
                         
 print(f'Dataset Size: ({len(dataset.train)*args.batch_size}, {len(dataset.val)*args.batch_size}, {len(dataset.test)*args.batch_size})')
 
-#loss_seg = DiceLoss(sigmoid=True, squared_pred=True, reduction='mean')
 loss_ce = nn.BCEWithLogitsLoss(reduction='mean')
 dice_metric = DiceMetric(include_background=True, reduction='mean', get_not_nans=False)
 
@@ -145,8 +95,7 @@ print('Starting Training')
 device = torch.device('cuda'if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 
-#best_metric = float('inf') # if using best val loss
-best_metric = 0 # if using best val dice
+best_metric = 0
 best_metric_epoch = 0
 train_loss = []
 train_dice = []
@@ -166,7 +115,6 @@ for epoch in range(args.epochs):
         optimizer.zero_grad()
         outputs = model(inputs)
         
-        #loss = loss_seg(outputs, labels) + loss_ce(outputs, labels.float())
         loss = loss_ce(outputs, labels)
         loss.backward()
         optimizer.step()
@@ -201,7 +149,6 @@ for epoch in range(args.epochs):
                 val_inputs, val_labels = val_inputs.to(device), val_labels.to(device)
                 val_outputs = model(val_inputs)
 
-                #loss = loss_seg(val_outputs, val_labels) + loss_ce(val_outputs, val_labels.float())
                 loss = loss_ce(val_outputs, val_labels)
                 epoch_loss += loss.item()
                 val_outputs = torch.sigmoid(val_outputs)
