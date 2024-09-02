@@ -6,11 +6,12 @@ import numpy as np
 from monai.metrics import DiceMetric
 from utils.data_utils import list_nii_paths, list_prostate_paths
 from dataset import CancerNetPCa
-from utils.models import get_model
+from utils.initialize import get_model
 from thop import profile
 
 import os
 from time import perf_counter
+from types import SimpleNamespace
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', default='unet', type=str, help='Model architecture to be used for training.')
@@ -26,11 +27,11 @@ args_dict = vars(args)
 
 model_loss = []
 model_dice = []
-time = []
+inference_time = []
 
 if args.save:
-    dir = f'evaluate/{args.model}'
-    os.mkdir(dir)
+    save_dir = f'evaluate/{args.model}'
+    os.makedirs(save_dir, exist_ok=True)
 
 # check if evaluating single model, or set of models
 if args.model.count('-') > 0:
@@ -40,33 +41,23 @@ else:
 
 for score in os.listdir(args.param_dir):
     if score.startswith(args.model):
-        params = np.load(f'{args.param_dir}/{score}/params.npy', allow_pickle=True).tolist()
+        saved_params = np.load(f'{args.param_dir}/{score}/params.npy', allow_pickle=True).tolist()
+        saved_args = SimpleNamespace(**saved_params)
         model_weights = torch.load(f'{args.weight_dir}/{score}/CancerNetPCa.pth', map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-        batch_size = params['batch_size']
-        seed = params['seed']
-        learning_rate = params['learning_rate']
-        size = params['size']
-        init_filters = params['init_filters']
-        if params['prostate_mask']:
-            prostate_mask = True
-        else:
-            prostate_mask = False
 
-        model = get_model(model_name, init_filters, size)
+        model = get_model(saved_args)
 
-        img_paths = list_nii_paths(args.img_dir)
-        mask_paths = list_prostate_paths(args.mask_dir)
+        img_paths = list_nii_paths(saved_args.img_dir)
+        mask_paths = list_prostate_paths(saved_args.mask_dir)
 
         transform = transforms.Compose([
             transforms.ToPILImage(),
-            transforms.Resize((size, size)),
+            transforms.Resize((saved_args.size, saved_args.size)),
             transforms.ToTensor(),
         ])
 
-        dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=seed, batch_size=batch_size,
-                                prostate=prostate_mask, transform=transform)
-        
-        print(len(dataset.test)*batch_size)
+        dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=saved_args.seed, batch_size=saved_args.batch_size,
+                                prostate=saved_args.prostate_mask, transform=transform)
 
         loss_ce = nn.BCEWithLogitsLoss(reduction='mean')
         dice_metric = DiceMetric(include_background=True, reduction='mean', get_not_nans=False)
@@ -102,31 +93,29 @@ for score in os.listdir(args.param_dir):
 
         end_time = perf_counter()
         elapsed_time += (end_time - start_time)
-        total_time = elapsed_time / (len(dataset.test)*batch_size)
+        total_time = elapsed_time / (len(dataset.test)*saved_args.batch_size)
 
         print(f'Loss: {test_loss:.4f}, Dice: {test_dice:.4f}, Average time: {total_time:.4f}')
         model_loss.append(test_loss)
         model_dice.append(test_dice)
         
-        time.append(total_time)
+        inference_time.append(total_time)
+
+        if args.params:
+            input_tensor = torch.randn(saved_args.batch_size, 1, saved_args.size, saved_args.size).to(device)
+            flops, params = profile(model, inputs=(input_tensor,))
+            print(f'Total GFLOPs: {flops/10**9}')
+            print(f'Total M parameters: {params/10**6}')
 
 scores = {
-    'inference-time': time,
+    'inference-time': inference_time,
     'test-loss': model_loss,
     'test-dice': model_dice,
 }
 
 if args.save:
-    print(f'Saving values at {dir}')
-    np.save(f'{dir}/scores.npy', scores)
-
-if args.params:
-    input_tensor = torch.randn(batch_size, 1, size, size).to(device)
-
-    flops, params = profile(model, inputs=(input_tensor,))
-
-    print(f'Total GFLOPs: {flops/10**9}')
-    print(f'Total M parameters: {params/10**6}')
+    print(f'Saving values at {save_dir}')
+    np.save(f'{save_dir}/scores.npy', scores)
 
 
 

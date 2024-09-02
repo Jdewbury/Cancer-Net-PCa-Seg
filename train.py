@@ -6,7 +6,7 @@ import numpy as np
 from monai.metrics import DiceMetric
 from utils.data_utils import list_nii_paths, list_prostate_paths, load_weights
 from dataset import CancerNetPCa
-from utils.models import get_model
+from utils.initialize import get_model, get_optimizer, get_scheduler
 
 import os
 from time import perf_counter
@@ -34,29 +34,12 @@ args = parser.parse_args()
 default_args = {action.dest: action.default for action in parser._actions if action.dest != 'help'}
 args_dict = {**default_args, **vars(args)}
 
-model = get_model(args.model, args.init_filters, args.size)
+model = get_model(args)
+optimizer = get_optimizer(args, model)
+scheduler = get_scheduler(args, optimizer)
 
 if args.weights:
     model = load_weights(model, args.weights)
-
-if args.optimizer == 'adam':
-    print('Using Adam optimizer')
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, betas=(0.5, 0.999))
-elif args.optimizer == 'adamw':
-    print('Using AdamW optimizer')
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, betas=(0.5, 0.999))
-elif args.optimizer == 'sgd':
-    print('Using SGD optimizer')
-    optimizer = torch.optim.SGD(model.parameters(), lr=args.learning_rate, momentum=0.9)
-
-if args.scheduler == 'step':
-    print('Using StepLR')
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=(args.epochs // 4), gamma=args.lr_step)
-if args.scheduler == 'cosine':
-    print('Using CosineAnnealingLR')
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=(args.epochs // 4), eta_min=0)
-else:
-    print('No LR scheduler')
 
 img_paths = list_nii_paths(args.img_dir)
 mask_paths = list_prostate_paths(args.mask_dir)
@@ -69,8 +52,6 @@ transform = transforms.Compose([
 
 dataset = CancerNetPCa(img_path=img_paths, mask_path=mask_paths, seed=args.seed, batch_size=args.batch_size,
                         prostate=args.prostate_mask, transform=transform)
-                        
-print(f'Dataset Size: ({len(dataset.train)*args.batch_size}, {len(dataset.val)*args.batch_size}, {len(dataset.test)*args.batch_size})')
 
 loss_ce = nn.BCEWithLogitsLoss(reduction='mean')
 dice_metric = DiceMetric(include_background=True, reduction='mean', get_not_nans=False)
@@ -132,7 +113,7 @@ for epoch in range(args.epochs):
     train_loss.append(epoch_loss)
     train_dice.append(train_metric)
 
-    if args.scheduler:
+    if scheduler:
         scheduler.step()
         print(f'epoch {epoch + 1}, learning rate: {scheduler.get_last_lr()[0]:.1e}, train loss: {epoch_loss:.4f}, train dice: {train_metric:.4f}')
     else:
