@@ -6,6 +6,13 @@ This repository contains modules and instructions for replicating and extending 
 - A training script `./train.py` to train the select architectures on the PCa CDI<sup>s</sup> data
 - An inference script `./evaluate.py` to evaluate the trained networks on the testing data
 
+## Dataset
+Cancer-Net PCa-Data is an open access benchmark dataset of volumetric correlated diffusion imaging (CDIs) data acquisitions of prostate cancer patients. Cancer-Net PCa-Data is a part of the Cancer-Net open source initiative dedicated to advancement in machine learning and imaging research to aid clinicians in the global fight against cancer.
+
+The volumetric CDIs data acquisitions in the Cancer-Net PCa-Data dataset were generated from a patient cohort of 200 patient cases acquired at Radboud University Medical Centre (Radboudumc) in the Prostate MRI Reference Center in Nijmegen, The Netherlands and made available as part of the SPIE-AAPM-NCI PROSTATEx Challenges. Masks derived from the PROSTATEx_masks repository are also provided which label regions of healthy prostate tissue, clinically significant prostate cancer (csPCa), and clinically insignificant prostate cancer (insPCa).
+
+This [dataset](https://www.kaggle.com/datasets/hgunraj/cancer-net-pca-data) is being used to train and validate our Cancer-Net PCa-Seg models for PCa lesion segmentation from CDIs data acquisitions.
+
 ## Train
 If you want to train a network from scratch, here is a sample training run:
 ```
