@@ -14,13 +14,13 @@ from time import perf_counter
 from types import SimpleNamespace
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', default='unet', type=str, help='Model architecture to be used for training.')
+parser.add_argument('--model', default='unet', type=str, help='Model architecture that was used for training.')
 parser.add_argument('--img_dir', default='data/images', type=str, help='Directory containing image data.')
 parser.add_argument('--mask_dir', default='data_2', type=str, help='Directory containing mask data.')
 parser.add_argument('--weight_dir', default='models', type=str, help='Directory containing model weight(s).')
 parser.add_argument('--param_dir', default='scores', type=str, help='Directory containing model parameters.')
-parser.add_argument('--save', action='store_true', help='Save inference results.')
 parser.add_argument('--params', action='store_true', help='Print total number of model parameters and FLOPs.')
+parser.add_argument('--save', action='store_true', help='Save inference results.')
 
 args = parser.parse_args()
 args_dict = vars(args)

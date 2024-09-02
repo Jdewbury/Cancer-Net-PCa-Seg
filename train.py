@@ -16,19 +16,21 @@ parser.add_argument('--batch_size', default=16, type=int, help='Batch size for t
 parser.add_argument('--epochs', default=200, type=int, help='Total number of training epochs.')
 parser.add_argument('--seed', default=42, type=int, help='Seed to use for splitting dataset.')
 parser.add_argument('--learning_rate', default=0.001, type=float, help='Initial learning rate for training.')
-parser.add_argument('--model', default='unet', type=str, help='Model architecture to be used for training.')
+parser.add_argument('--model', default='unet', type=str, choices=['segresnet', 'unet', 'swinunetr', 'attentionunet', 'mambaunet'],
+                    help='Model architecture to be used for training.')
 parser.add_argument('--img_dir', default='data/images', type=str, help='Directory containing image data.')
 parser.add_argument('--mask_dir', default='data_2', type=str, help='Directory containing mask data.')
 parser.add_argument('--prostate_mask', action='store_true', help='Flag to use prostate mask.')
 parser.add_argument('--size', default=128, type=int, help='Desired size of image and mask.')
 parser.add_argument('--val_interval', default=2, type=int, help='Epoch interval for evaluation on validation set.')
 parser.add_argument('--lr_step', default=0.1, type=float, help='Epoch interval for evaluation on validation set.')
-parser.add_argument('--scheduler', default=None, type=str, help='Learning rate scheduler to use.')
-parser.add_argument('--optimizer', default='adam', type=str, help='Learning rate scheduler to use.')
+parser.add_argument('--scheduler', default=None, type=str, choices=[None, 'step', 'cosine'],
+                    help='Learning rate scheduler to use.')
+parser.add_argument('--optimizer', default='adam', type=str, choices=['adam', 'adamw', 'sgd'],
+                    help='Optimizer to use for training.')
 parser.add_argument('--weights', default=None, type=str, help='Path to pretrained model weights to use.')
 parser.add_argument('--init_filters', default=32, type=int, help='Number of filters for model.')
 parser.add_argument('--save', action='store_true', help='Save results.')
-parser.add_argument('--test', action='store_true', help='Evaluate model on test set.')
 
 args = parser.parse_args()
 default_args = {action.dest: action.default for action in parser._actions if action.dest != 'help'}
