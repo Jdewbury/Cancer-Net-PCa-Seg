@@ -1,5 +1,7 @@
 # Cancer-Net PCa-Seg: Benchmarking Deep Learning Models for Prostate Cancer Segmentation Using Synthetic Correlated Diffusion Imaging
 
+![Sample dataset](https://github.com/Jdewbury/Cancer-Net-PCa-Seg/blob/main/src/sample.png)
+<br><br>
 Prostate cancer (PCa) is the most prevalent cancer among men in the United States, accounting for nearly 300,000 cases, 29\% of all diagnoses and 35,000 total deaths in 2024. Traditional screening methods such as prostate-specific antigen (PSA) testing and magnetic resonance imaging (MRI) have been pivotal in diagnosis, but have faced limitations in specificity and generalizability. In this paper, we explore the potential of enhancing PCa lesion segmentation using a novel MRI modality called synthetic correlated diffusion imaging (CDI<sup>s</sup>). We employ several state-of-the-art deep learning models, including U-Net, SegResNet, Swin UNETR, Attention U-Net, and LightM-UNet, to segment PCa lesions from a 200 CDI<sup>s</sup> patient cohort. We find that SegResNet achieved superior segmentation performance with a Dice-Sørensen coefficient (DSC) of $76.68 \pm 0.8$. Notably, the Attention U-Net, while slightly less accurate (DSC $74.82 \pm 2.0$), offered a favorable balance between accuracy and computational efficiency. Our findings demonstrate the potential of deep learning models in improving PCa lesion segmentation using CDI<sup>s</sup> to enhance PCa management and clinical support. 
 <br><br>
 This repository contains modules and instructions for replicating and extending experiments featured in our paper:
